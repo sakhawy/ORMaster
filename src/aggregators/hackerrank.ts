@@ -1,7 +1,7 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
 
-import IAggregator from './base';
+import IAggregator, { IChallenge } from './base';
 
 const HACKERRANK_COOKIE = process.env.HACKERRANK_COOKIE || "";
 const HACKERRANK_URL = "https://www.hackerrank.com/rest/contests/master/tracks/sql/challenges"
@@ -40,7 +40,7 @@ export default class HackerRank implements IAggregator {
         )
 
         // reformat
-        const data = res.data['models'].map((challenge: any) => {
+        const challenges: IChallenge[] = res.data['models'].map((challenge: any) => {
             return {
                 title: challenge.name,
                 difficulty: challenge.difficulty_name,
@@ -48,7 +48,7 @@ export default class HackerRank implements IAggregator {
             }
         });
         
-        return data
+        return challenges
     }
 
     get_challenge = async (challenge_url: string) => {

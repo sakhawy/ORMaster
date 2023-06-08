@@ -1,3 +1,10 @@
+
+export interface IChallenge {
+    title: string;
+    difficulty: string;
+    url: string;
+}
+
 export default interface IAggregator {
     name: string;
     base_url: string;
@@ -7,7 +14,7 @@ export default interface IAggregator {
    * @description Lists the challenges of the aggregator. 
    * @returns A list of key:value pairs (`challenge title`: `challenge url`).
    */
-    list_challenges: () => Promise<string[]>;
+    list_challenges: () => Promise<IChallenge[]>;
 
     /**
     * @description Returns the data of a given challenge.

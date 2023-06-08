@@ -2,15 +2,19 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import HackerRank from './aggregators/hackerrank';
+import { IChallenge } from './aggregators/base';
 
 class ORMasterItem extends vscode.TreeItem {
 	constructor(
-		public readonly label: string,
+		public readonly title: string,
+		public readonly difficulty: string,
+		public readonly url: string,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState
 	) {
-		super(label, collapsibleState);
+		super(title, collapsibleState);
 		this.tooltip = `${this.label}`;
 		this.description = `${this.label}`;
+		this.url = `${this.url}`
 	}
 
 	iconPath = {
@@ -22,9 +26,11 @@ class ORMasterItem extends vscode.TreeItem {
 }
 
 class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
-	data: any;
+	hackerrank_aggregator: HackerRank
 
-	constructor (private worspaceRoot: string) {}
+	constructor (private worspaceRoot: string, hackerrank_aggregator: HackerRank) {
+		this.hackerrank_aggregator = hackerrank_aggregator
+	}
 
 	getTreeItem(element: ORMasterItem): vscode.TreeItem {
 		return element;
@@ -35,31 +41,52 @@ class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
 	}
 
 	private getORMasterChildren(element?: string): Promise<ORMasterItem[]> {
-		const hackerrank_aggregator = new HackerRank();
-		const data = hackerrank_aggregator.list_challenges().then(
-			(data) => data.map(
-				(challenge: any) => new ORMasterItem(challenge.title, vscode.TreeItemCollapsibleState.None)
+		const data = this.hackerrank_aggregator.list_challenges().then(
+			(data: IChallenge[]) => data.map(
+				(challenge) => new ORMasterItem(
+					challenge.title,
+					challenge.difficulty,
+					challenge.url,
+					vscode.TreeItemCollapsibleState.None
+				)
 			)
 		)
 		return data
 	}
 }
 
-
 export function activate(context: vscode.ExtensionContext) {
 	const rootPath =
 	vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
+	
+	const hackerrank_aggregator = new HackerRank()
 
-	const ormasterProvider = new ORMasterProvider(rootPath!)
+	const ormasterProvider = new ORMasterProvider(
+		rootPath!, 
+		hackerrank_aggregator
+	)
 
 	const tree = vscode.window.createTreeView('ormaster', {
 		treeDataProvider: ormasterProvider
 	});
 
 	tree.onDidChangeSelection(e => {
-		// open the WebView with the challenge details
+		// get the html
+		const challenge_url = e.selection[0].url
+		console.log(challenge_url)
+		hackerrank_aggregator.get_challenge(challenge_url).then(data => {
+			const panel = vscode.window.createWebviewPanel(
+				'ormaster',
+				'ORMaster',
+				vscode.ViewColumn.One,
+				{
+					enableScripts: true
+				}
+			)
+			panel.webview.html = data!
+		})
 	})
 }
 
