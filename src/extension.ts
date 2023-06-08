@@ -1,26 +1,66 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import HackerRank from './aggregators/hackerrank';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+class ORMasterItem extends vscode.TreeItem {
+	constructor(
+		public readonly label: string,
+		public readonly collapsibleState: vscode.TreeItemCollapsibleState
+	) {
+		super(label, collapsibleState);
+		this.tooltip = `${this.label}`;
+		this.description = `${this.label}`;
+	}
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "ormaster" is now active!');
+	iconPath = {
+		light: path.join(__filename, '..', '..', 'resources', 'light', 'aggregator.svg'),
+		dark: path.join(__filename, '..', '..', 'resources', 'dark', 'aggregator.svg')
+	};
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('ormaster.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from ormaster!');
-	});
-
-	context.subscriptions.push(disposable);
+	contextValue = 'aggregator';
 }
 
-// This method is called when your extension is deactivated
+class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
+	data: any;
+
+	constructor (private worspaceRoot: string) {}
+
+	getTreeItem(element: ORMasterItem): vscode.TreeItem {
+		return element;
+	}
+
+	getChildren(element?: ORMasterItem): Thenable<ORMasterItem[]> {
+		return Promise.resolve(this.getORMasterChildren());
+	}
+
+	private getORMasterChildren(element?: string): Promise<ORMasterItem[]> {
+		const hackerrank_aggregator = new HackerRank();
+		const data = hackerrank_aggregator.list_challenges().then(
+			(data) => data.map(
+				(challenge: any) => new ORMasterItem(challenge.title, vscode.TreeItemCollapsibleState.None)
+			)
+		)
+		return data
+	}
+}
+
+
+export function activate(context: vscode.ExtensionContext) {
+	const rootPath =
+	vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+		? vscode.workspace.workspaceFolders[0].uri.fsPath
+		: undefined;
+
+	const ormasterProvider = new ORMasterProvider(rootPath!)
+
+	const tree = vscode.window.createTreeView('ormaster', {
+		treeDataProvider: ormasterProvider
+	});
+
+	tree.onDidChangeSelection(e => {
+		// open the WebView with the challenge details
+	})
+}
+
 export function deactivate() {}

@@ -13,11 +13,27 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "ormaster.helloWorld",
-        "title": "Hello World"
-      }
-    ]
+
+    ],
+    "views": {
+      "ormaster-explorer": [
+        {
+          "id": "ormaster",
+          "name": "ORMaster",
+          "icon": "media/ormaster-icon.svg",
+          "contextualTitle": "ORMaster"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ormaster-explorer",
+          "title": "ORMaster Explorer",
+          "icon": "media/ormaster-icon.svg"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

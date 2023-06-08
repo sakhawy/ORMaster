@@ -6,17 +6,17 @@ import IAggregator from './base';
 const HACKERRANK_COOKIE = process.env.HACKERRANK_COOKIE || "";
 const HACKERRANK_URL = "https://www.hackerrank.com/rest/contests/master/tracks/sql/challenges"
 
-class HackerRank implements IAggregator {
+export default class HackerRank implements IAggregator {
     name: string;
     base_url: string;
     cookie: string;
     axios_client: any;
     challenge_base_url: string;
 
-    constructor(name: string, base_url: string, cookie: string) {
-        this.name = name;
-        this.base_url = base_url;
-        this.cookie = cookie;
+    constructor(name?: string, base_url?: string, cookie?: string) {
+        this.name = "HackerRank";
+        this.base_url = HACKERRANK_URL;
+        this.cookie = HACKERRANK_COOKIE;
         this.axios_client = axios.create({
             baseURL: this.base_url,
             headers: {
@@ -30,13 +30,20 @@ class HackerRank implements IAggregator {
     list_challenges = async () => {
         // get json data
         const res = await this.axios_client.get(
-            HACKERRANK_URL
+            HACKERRANK_URL,
+            {
+                // Quick hack, HackerRank currently has about 50 challenges.
+                params: {
+                    limit: 200,
+                }
+            }
         )
 
         // reformat
         const data = res.data['models'].map((challenge: any) => {
             return {
                 title: challenge.name,
+                difficulty: challenge.difficulty_name,
                 url: `${this.challenge_base_url}${challenge.slug}`
             }
         });
