@@ -55,6 +55,30 @@ class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
 	}
 }
 
+function getWebviewContent(data: string) {
+	const button: { element: string, script: string } = {
+		element: `<button id="solve">CLICK ME TO CONSOLE LOG :D</button>`,
+		script: `const button = document.getElementById('solve');
+				button.onclick = () => vscode.postMessage({
+					command: 'previewChallenge',
+				});`,
+	};
+	
+	return `
+		<html>
+			<body>
+				${data}
+				${button.element}
+			</body>
+			<script>
+				const vscode = acquireVsCodeApi();
+				${button.script}
+			</script>
+		</html>
+	`;
+}
+
+
 export function activate(context: vscode.ExtensionContext) {
 	const rootPath =
 	vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
@@ -72,22 +96,36 @@ export function activate(context: vscode.ExtensionContext) {
 		treeDataProvider: ormasterProvider
 	});
 
-	tree.onDidChangeSelection(e => {
+	tree.onDidChangeSelection(async e => {
 		// get the html
 		const challenge_url = e.selection[0].url
-		console.log(challenge_url)
-		hackerrank_aggregator.get_challenge(challenge_url).then(data => {
-			const panel = vscode.window.createWebviewPanel(
-				'ormaster',
-				'ORMaster',
-				vscode.ViewColumn.One,
-				{
-					enableScripts: true
-				}
-			)
-			panel.webview.html = data!
+		const challengeHTML = await hackerrank_aggregator.get_challenge(challenge_url)
+		vscode.commands.registerCommand("ormaster.previewChallenge", (challenge: IChallenge) => {
+			console.log('YOU JUST COMMUNICATED WITH THE VSCODE API FROM THE WEBVIEW!')
+			// return challengePreviewWebview.showWebviewInternal(challenge)
 		})
+
+		const panel = vscode.window.createWebviewPanel(
+			'ormaster',
+			'ORMaster',
+			vscode.ViewColumn.One,
+			{
+				enableScripts: true
+			}
+		)
+		
+		panel.webview.html = getWebviewContent(challengeHTML!)!
+		panel.webview.onDidReceiveMessage(
+			(message) => {
+				switch(message.command) {
+					case 'previewChallenge':
+						return vscode.commands.executeCommand("ormaster.previewChallenge");
+				}
+			}
+		)
+
 	})
+
 }
 
 export function deactivate() {}
