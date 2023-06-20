@@ -44,7 +44,7 @@ export class DjangoEnvironmentManager {
         await executeShellCommand(pythonBinPath, ['-m', 'django', 'startproject', 'ormaster', projectPath])
 
         // Setup the database backend to sqlite3 in memory
-        const settingsPath = path.join(this.getDjangoPath(), 'ormaster', 'ormaster', 'settings.py')
+        const settingsPath = path.join(this.getDjangoPath(), 'ormaster', 'settings.py')
         const settings = fs.readFileSync(settingsPath, 'utf-8')
         const newSettings = settings.replace(
             '        \'ENGINE\': \'django.db.backends.sqlite3\',',

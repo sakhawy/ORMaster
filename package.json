@@ -15,7 +15,11 @@
     "commands": [
       {
         "command": "ormaster.setupChallenge",
-        "title": "Preview Challenge"
+        "title": "Setup Challenge"
+      },
+      {
+        "command": "ormaster.submitChallenge",
+        "title": "Submit Challenge"
       }
     ],
     "views": {
@@ -36,6 +40,11 @@
           "icon": "media/ormaster-icon.svg"
         }
       ]
+    }
+  },
+  "capabilities": {
+    "codeLensProvider": {
+      "resolveProvider": true
     }
   },
   "scripts": {

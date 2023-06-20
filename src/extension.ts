@@ -62,7 +62,7 @@ class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
 
 function getWebviewContent(data: string) {
 	const button: { element: string, script: string } = {
-		element: `<button id="solve">CLICK ME TO CONSOLE LOG :D</button>`,
+		element: `<button id="solve">Solve</button>`,
 		script: `const button = document.getElementById('solve');
 				button.onclick = () => vscode.postMessage({
 					command: 'setupChallenge',
@@ -84,6 +84,27 @@ function getWebviewContent(data: string) {
 }
 
 
+class CustomCodeLensProvider implements vscode.CodeLensProvider {
+    public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken):
+        vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
+			let codeLensLine: number = document.lineCount - 1;
+			// add a code lens on the last line of the document
+			return [
+				new vscode.CodeLens(
+					new vscode.Range(
+						new vscode.Position(codeLensLine, 0),
+						new vscode.Position(codeLensLine, 0)
+					),
+					{
+						title: "Submit Challenge",
+						command: "ormaster.submitChallenge",
+						arguments: [document.uri]
+					}
+				)
+			];
+		}
+}
+
 export function activate(context: vscode.ExtensionContext) {
 	const rootPath =
 	vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
@@ -100,6 +121,18 @@ export function activate(context: vscode.ExtensionContext) {
 	const tree = vscode.window.createTreeView('ormaster', {
 		treeDataProvider: ormasterProvider
 	});
+
+	vscode.commands.registerCommand("ormaster.submitChallenge", async () => {
+		console.log("Challenge submitted!")
+	})
+
+	// register the code lens provider
+	context.subscriptions.push(
+		vscode.languages.registerCodeLensProvider(
+			{ scheme: "file" },
+			new CustomCodeLensProvider()
+		)
+	)
 
 	tree.onDidChangeSelection(async e => {
 		// get the html
