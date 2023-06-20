@@ -42,6 +42,7 @@ export default class HackerRank implements IAggregator {
         // reformat
         const challenges: IChallenge[] = res.data['models'].map((challenge: any) => {
             return {
+                slug: challenge.slug,
                 title: challenge.name,
                 difficulty: challenge.difficulty_name,
                 url: `${this.challenge_base_url}${challenge.slug}`

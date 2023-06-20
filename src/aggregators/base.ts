@@ -1,5 +1,6 @@
 
 export interface IChallenge {
+    slug: string;
     title: string;
     difficulty: string;
     url: string;
