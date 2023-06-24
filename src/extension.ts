@@ -122,8 +122,11 @@ export function activate(context: vscode.ExtensionContext) {
 		treeDataProvider: ormasterProvider
 	});
 
-	vscode.commands.registerCommand("ormaster.submitChallenge", async () => {
-		djangoProjectManager.runQueryset("select_all_sql")
+	vscode.commands.registerCommand("ormaster.submitChallenge", async (uri) => {
+		
+		// [...]/${challengeSlug}/models.py
+		const challengeSlug = uri.path.split("/").slice(-2)[0]
+		djangoProjectManager.runQueryset(challengeSlug)
 	})
 
 	// register the code lens provider
