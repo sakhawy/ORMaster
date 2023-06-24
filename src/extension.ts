@@ -123,7 +123,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	vscode.commands.registerCommand("ormaster.submitChallenge", async () => {
-		console.log("Challenge submitted!")
+		djangoProjectManager.runQueryset("select_all_sql")
 	})
 
 	// register the code lens provider
