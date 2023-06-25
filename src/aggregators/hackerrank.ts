@@ -125,10 +125,14 @@ export default class HackerRank implements IAggregator {
                                         ).then(
                                             (response: any) => {
                                                 status = response.data.model.status
-                                                console.log(status)
+                                                // stop the interval if the status is not in queue
+                                                if (status != "Processing") {
+                                                    clearInterval(interval)
+                                                    console.log(status)
+                                                }
                                             }
                                         )
-                                    }
+                                    }, 5000
                                 )
 
                             }
