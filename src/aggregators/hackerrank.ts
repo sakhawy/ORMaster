@@ -1,5 +1,7 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
+import * as fs from 'fs-extra';
+import * as path from 'path';
 
 import IAggregator, { IChallenge } from './base';
 
@@ -63,7 +65,82 @@ export default class HackerRank implements IAggregator {
 
     }
 
-    submit_challenge = (challenge_url: string, data: any) => {
-        return {};
+    submit_challenge = (challenge_url?: string, data?: any) => {
+        const cookie = ""
+        var csrf_token: string = ''
+
+        axios.get(
+            'https://www.hackerrank.com/challenges/select-all-sql/problem',
+            {
+                headers: {
+                    Cookie: cookie,
+                    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+                }
+            }
+        ).then(
+            (response) => {
+                // parse the CSRF token
+                const $ = cheerio.load(response.data)
+                csrf_token = $('meta[name="csrf-token"]').attr('content') || ""
+                
+                axios.post(
+                    'https://www.hackerrank.com/rest/contests/master/challenges/select-all-sql/submissions',
+                    {"code":"\n/*\n    Enter your query here and follow these instructions:\n    1. Please append a semicolon \";\" at the end of the query and enter your query in a single line to avoid error.\n    2. The AS keyword causes errors, so follow this convention: \"Select t.Field From table1 t\" instead of \"select t.Field From table1 AS t\"\n    3. Type your code immediately after comment. Don't leave any blank line.\n*/","language":"db2","contest_slug":"master","playlist_slug":""},
+                    {
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+                            "X-CSRF-Token": csrf_token,
+                            "Cookie": cookie
+                        }
+                    }
+                ).then(
+                    (response: any) => {
+                        const id = response.data.model.id
+                        const submission_url = `https://www.hackerrank.com/rest/contests/master/challenges/select-all-sql/submissions/${id}`
+
+                        axios.get(
+                            submission_url,
+                            {
+                                headers: {
+                                    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+                                    // "X-CSRF-Token": csrf_token,
+                                    "Cookie": cookie
+                                }
+                            }
+                        ).then(
+                            (response: any) => {
+                                var status = response.data.model.status
+                                // send a request every 5 seconds to check the status
+                                const interval = setInterval(
+                                    () => {
+                                        axios.get(
+                                            submission_url,
+                                            {
+                                                headers: {
+                                                    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+                                                    // "X-CSRF-Token": csrf_token,
+                                                    "Cookie": cookie
+                                                }
+                                            }
+                                        ).then(
+                                            (response: any) => {
+                                                status = response.data.model.status
+                                                console.log(status)
+                                            }
+                                        )
+                                    }
+                                )
+
+                            }
+                        )
+                    }
+                        
+                )
+            }
+        )
     }
 }
+
+const hackerRank = new HackerRank()
+hackerRank.submit_challenge()
+
