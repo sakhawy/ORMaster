@@ -5,7 +5,6 @@ import * as path from 'path';
 
 import IAggregator, { IChallenge } from './base';
 
-const HACKERRANK_COOKIE = process.env.HACKERRANK_COOKIE || "";
 const HACKERRANK_URL = "https://www.hackerrank.com/rest/contests/master/tracks/sql/challenges"
 
 export default class HackerRank implements IAggregator {
@@ -18,7 +17,7 @@ export default class HackerRank implements IAggregator {
     constructor(name?: string, base_url?: string, cookie?: string) {
         this.name = "HackerRank";
         this.base_url = HACKERRANK_URL;
-        this.cookie = HACKERRANK_COOKIE;
+        this.cookie = process.env.HACKERRANK_COOKIE || "";
         this.axios_client = axios.create({
             baseURL: this.base_url,
             headers: {
@@ -65,12 +64,12 @@ export default class HackerRank implements IAggregator {
 
     }
 
-    submit_challenge = (challenge_url?: string, data?: any) => {
-        const cookie = ""
+    submit_challenge = (challenge_slug?: string, data?: any) => {
+        const cookie = this.cookie
+        
         var csrf_token: string = ''
-
         axios.get(
-            'https://www.hackerrank.com/challenges/select-all-sql/problem',
+            `https://www.hackerrank.com/challenges/${challenge_slug}/problem`,
             {
                 headers: {
                     Cookie: cookie,
@@ -84,8 +83,8 @@ export default class HackerRank implements IAggregator {
                 csrf_token = $('meta[name="csrf-token"]').attr('content') || ""
                 
                 axios.post(
-                    'https://www.hackerrank.com/rest/contests/master/challenges/select-all-sql/submissions',
-                    {"code":"\n/*\n    Enter your query here and follow these instructions:\n    1. Please append a semicolon \";\" at the end of the query and enter your query in a single line to avoid error.\n    2. The AS keyword causes errors, so follow this convention: \"Select t.Field From table1 t\" instead of \"select t.Field From table1 AS t\"\n    3. Type your code immediately after comment. Don't leave any blank line.\n*/","language":"db2","contest_slug":"master","playlist_slug":""},
+                    `https://www.hackerrank.com/rest/contests/master/challenges/${challenge_slug}/submissions`,
+                    {"code": data,"language":"db2","contest_slug":"master","playlist_slug":""},
                     {
                         headers: {
                             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
@@ -96,7 +95,7 @@ export default class HackerRank implements IAggregator {
                 ).then(
                     (response: any) => {
                         const id = response.data.model.id
-                        const submission_url = `https://www.hackerrank.com/rest/contests/master/challenges/select-all-sql/submissions/${id}`
+                        const submission_url = `https://www.hackerrank.com/rest/contests/master/challenges/${challenge_slug}/submissions/${id}`
 
                         axios.get(
                             submission_url,
@@ -128,7 +127,7 @@ export default class HackerRank implements IAggregator {
                                                 // stop the interval if the status is not in queue
                                                 if (status != "Processing") {
                                                     clearInterval(interval)
-                                                    console.log(status)
+                                                    console.log(response.data)
                                                 }
                                             }
                                         )

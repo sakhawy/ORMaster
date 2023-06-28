@@ -50,7 +50,7 @@ def get_queryset() -> models.QuerySet:
         return modelsPath
     }
 
-    async runQueryset(appName: string): Promise<any> {
+    async runQueryset(appName: string): Promise<string> {
         // makemigrations
         const pythonBinPath = path.join(this.environmentManager.getDjangoPath(), 'venv', 'bin', 'python3')
         const managePath = path.join(this.environmentManager.getDjangoPath(), 'manage.py')
@@ -82,7 +82,7 @@ print(str(get_queryset().query).replace('${appName}_', ''))
 
         const sql = await executeShellCommand(pythonBinPath, [managePath, 'shell', '-c', `exec(open('${injectionPath}').read())`])
     
-        console.log(sql)
+        return sql
     }
 }
 

@@ -105,11 +105,18 @@ class CustomCodeLensProvider implements vscode.CodeLensProvider {
 		}
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	const rootPath =
 	vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
+
+	const cookie: string | undefined = await vscode.window.showInputBox({
+		placeHolder: "Cookie",
+		prompt: "Enter the HackerRank cookie",
+	  });
+
+	process.env['HACKERRANK_COOKIE'] = cookie;
 	
 	const hackerrank_aggregator = new HackerRank()
 
@@ -125,8 +132,13 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand("ormaster.submitChallenge", async (uri) => {
 		
 		// [...]/${challengeSlug}/models.py
-		const challengeSlug = uri.path.split("/").slice(-2)[0]
-		djangoProjectManager.runQueryset(challengeSlug)
+		const challengeSlug: string = uri.path.split("/").slice(-2)[0]
+		var sql = await djangoProjectManager.runQueryset(challengeSlug)
+		sql += ';'
+
+		const slug = challengeSlug.replace(/_/g, '-')
+
+		hackerrank_aggregator.submit_challenge(slug, sql)
 	})
 
 	// register the code lens provider
