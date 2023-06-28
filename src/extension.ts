@@ -161,7 +161,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			// open the models.py file in a new vscode window
 			vscode.workspace.openTextDocument(modelsPath).then(
 				(doc) => {
-					vscode.window.showTextDocument(doc, { preview: false })
+					vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.Two })
 				}
 			)
 		})
