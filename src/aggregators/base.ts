@@ -7,8 +7,8 @@ export interface IChallenge {
 }
 
 export default interface IAggregator {
-    name: string;
-    base_url: string;
+    handle: string;
+    challengesUrl: string;
     cookie: string;
 
     /**

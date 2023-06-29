@@ -4,6 +4,7 @@ import * as path from 'path';
 import HackerRank from './aggregators/hackerrank';
 import { IChallenge } from './aggregators/base';
 import djangoProjectManager from './ormManagers/django/projectManager';
+import configManager from './config/configManager';
 
 class ORMasterItem extends vscode.TreeItem {
 	// TODO: pass the challenge object to the constructor
@@ -111,12 +112,14 @@ export async function activate(context: vscode.ExtensionContext) {
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
 
-	const cookie: string | undefined = await vscode.window.showInputBox({
-		placeHolder: "Cookie",
-		prompt: "Enter the HackerRank cookie",
-	  });
-
-	process.env['HACKERRANK_COOKIE'] = cookie;
+	await configManager.getOrSet('cookie', async (): Promise<string | null> => {
+		const cookie: string | undefined = await vscode.window.showInputBox({
+			placeHolder: "HackerRank Cookie",
+			prompt: "Enter the HackerRank cookie",
+		  });
+		
+		return cookie || null
+	})
 	
 	const hackerrank_aggregator = new HackerRank()
 
@@ -180,7 +183,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			(message) => {
 				switch(message.command) {
 					case 'setupChallenge':
-						console.log(e.selection[0])
 						return vscode.commands.executeCommand("ormaster.setupChallenge", e.selection[0]);
 				}
 			}

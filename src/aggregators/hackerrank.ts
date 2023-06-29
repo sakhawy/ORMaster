@@ -1,37 +1,33 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import cheerio from 'cheerio';
-import * as fs from 'fs-extra';
-import * as path from 'path';
-
 import IAggregator, { IChallenge } from './base';
-
-const HACKERRANK_URL = "https://www.hackerrank.com/rest/contests/master/tracks/sql/challenges"
+import configManager from '../config/configManager';
 
 export default class HackerRank implements IAggregator {
-    name: string;
-    base_url: string;
+    handle: string;
+    challengesUrl: string;
     cookie: string;
-    axios_client: any;
-    challenge_base_url: string;
+    axiosClient: AxiosInstance;
+    challengeUrl: string;
 
-    constructor(name?: string, base_url?: string, cookie?: string) {
-        this.name = "HackerRank";
-        this.base_url = HACKERRANK_URL;
-        this.cookie = process.env.HACKERRANK_COOKIE || "";
-        this.axios_client = axios.create({
-            baseURL: this.base_url,
+    constructor() {
+        this.handle = "HackerRank";
+        this.challengesUrl = configManager.get('challengesUrl');
+        this.challengeUrl = configManager.get('challengeUrl')
+        this.cookie = configManager.get('cookie');
+        this.axiosClient = axios.create({
+            baseURL: this.challengesUrl,
             headers: {
                 Cookie: this.cookie,
                 "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)",
             }
         })
-        this.challenge_base_url = "https://www.hackerrank.com/challenges/"
     }
 
     list_challenges = async () => {
         // get json data
-        const res = await this.axios_client.get(
-            HACKERRANK_URL,
+        const res = await this.axiosClient.get(
+            this.challengesUrl,
             {
                 // Quick hack, HackerRank currently has about 50 challenges.
                 params: {
@@ -46,7 +42,7 @@ export default class HackerRank implements IAggregator {
                 slug: challenge.slug,
                 title: challenge.name,
                 difficulty: challenge.difficulty_name,
-                url: `${this.challenge_base_url}${challenge.slug}`
+                url: `${this.challengeUrl}${challenge.slug}`
             }
         });
         
@@ -54,7 +50,7 @@ export default class HackerRank implements IAggregator {
     }
 
     get_challenge = async (challenge_url: string) => {
-        const res = await this.axios_client.get(challenge_url);
+        const res = await this.axiosClient.get(challenge_url);
 
         // get the html of the problem statement
         const $ = cheerio.load(res.data);
@@ -65,14 +61,12 @@ export default class HackerRank implements IAggregator {
     }
 
     submit_challenge = (challenge_slug?: string, data?: any) => {
-        const cookie = this.cookie
-        
         var csrf_token: string = ''
         axios.get(
             `https://www.hackerrank.com/challenges/${challenge_slug}/problem`,
             {
                 headers: {
-                    Cookie: cookie,
+                    Cookie: this.cookie,
                     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
                 }
             }
@@ -89,7 +83,7 @@ export default class HackerRank implements IAggregator {
                         headers: {
                             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
                             "X-CSRF-Token": csrf_token,
-                            "Cookie": cookie
+                            "Cookie": this.cookie
                         }
                     }
                 ).then(
@@ -103,7 +97,7 @@ export default class HackerRank implements IAggregator {
                                 headers: {
                                     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
                                     // "X-CSRF-Token": csrf_token,
-                                    "Cookie": cookie
+                                    "Cookie": this.cookie
                                 }
                             }
                         ).then(
@@ -118,7 +112,7 @@ export default class HackerRank implements IAggregator {
                                                 headers: {
                                                     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
                                                     // "X-CSRF-Token": csrf_token,
-                                                    "Cookie": cookie
+                                                    "Cookie": this.cookie
                                                 }
                                             }
                                         ).then(
@@ -143,7 +137,3 @@ export default class HackerRank implements IAggregator {
         )
     }
 }
-
-const hackerRank = new HackerRank()
-hackerRank.submit_challenge()
-
