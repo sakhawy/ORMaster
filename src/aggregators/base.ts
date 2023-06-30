@@ -15,14 +15,14 @@ export default interface IAggregator {
    * @description Lists the challenges of the aggregator. 
    * @returns A list of key:value pairs (`challenge title`: `challenge url`).
    */
-    list_challenges: () => Promise<IChallenge[]>;
+    listChallenges: () => Promise<IChallenge[]>;
 
     /**
     * @description Returns the data of a given challenge.
     * @param challenge_url The url of the challenge.
     * @returns The data of the challenge.
     */
-    get_challenge: (challenge_url: string) => any;
+    getChallenge: (challenge_url: string) => any;
 
     /**
     * @description Submits a challenge to the aggregator.
@@ -30,5 +30,5 @@ export default interface IAggregator {
     * @param data The data of the challenge.
     * @returns The result of the submission.
     */
-    submit_challenge: (challenge_url: string, data: any) => any;
+    submitChallenge: (challenge_url: string, data: any) => any;
 }

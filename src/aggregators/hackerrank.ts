@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import cheerio from 'cheerio';
+import * as vscode from 'vscode';
 import IAggregator, { IChallenge } from './base';
 import configManager from '../config/configManager';
 
@@ -24,7 +25,23 @@ export default class HackerRank implements IAggregator {
         })
     }
 
-    list_challenges = async () => {
+    async login(force: boolean = false): Promise<void> {
+        // check the config for the cookie
+        var cookie = configManager.get('cookie')
+        if (cookie === '' || force) {
+            cookie = await vscode.window.showInputBox({
+                placeHolder: "Enter the HackerRank cookie: ",
+                prompt: "Enter the HackerRank cookie",
+            });
+            await configManager.set('cookie', cookie)
+        }
+        if (cookie !== undefined) {
+            this.cookie = cookie
+            this.axiosClient.defaults.headers.Cookie = cookie
+        }
+    }
+
+    listChallenges = async () => {
         // get json data
         const res = await this.axiosClient.get(
             this.challengesUrl,
@@ -49,7 +66,7 @@ export default class HackerRank implements IAggregator {
         return challenges
     }
 
-    get_challenge = async (challenge_url: string) => {
+    getChallenge = async (challenge_url: string) => {
         const res = await this.axiosClient.get(challenge_url);
 
         // get the html of the problem statement
@@ -60,7 +77,7 @@ export default class HackerRank implements IAggregator {
 
     }
 
-    submit_challenge = (challenge_slug?: string, data?: any) => {
+    submitChallenge = (challenge_slug?: string, data?: any) => {
         var csrf_token: string = ''
         axios.get(
             `https://www.hackerrank.com/challenges/${challenge_slug}/problem`,

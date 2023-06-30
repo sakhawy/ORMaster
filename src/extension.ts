@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import HackerRank from './aggregators/hackerrank';
 import { IChallenge } from './aggregators/base';
 import djangoProjectManager from './ormManagers/django/projectManager';
@@ -31,10 +32,10 @@ class ORMasterItem extends vscode.TreeItem {
 }
 
 class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
-	hackerrank_aggregator: HackerRank
+	hackerrank: HackerRank
 
 	constructor (private worspaceRoot: string, hackerrank_aggregator: HackerRank) {
-		this.hackerrank_aggregator = hackerrank_aggregator
+		this.hackerrank = hackerrank_aggregator
 	}
 
 	getTreeItem(element: ORMasterItem): vscode.TreeItem {
@@ -46,7 +47,7 @@ class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
 	}
 
 	private getORMasterChildren(element?: string): Promise<ORMasterItem[]> {
-		const data = this.hackerrank_aggregator.list_challenges().then(
+		const data = this.hackerrank.listChallenges().then(
 			(data: IChallenge[]) => data.map(
 				(challenge) => new ORMasterItem(
 					challenge.title,
@@ -111,26 +112,20 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
-
-	await configManager.getOrSet('cookie', async (): Promise<string | null> => {
-		const cookie: string | undefined = await vscode.window.showInputBox({
-			placeHolder: "HackerRank Cookie",
-			prompt: "Enter the HackerRank cookie",
-		  });
-		
-		return cookie || null
-	})
 	
-	const hackerrank_aggregator = new HackerRank()
+	const hackerrank = new HackerRank()
+	await hackerrank.login()
 
 	const ormasterProvider = new ORMasterProvider(
 		rootPath!, 
-		hackerrank_aggregator
+		hackerrank
 	)
 
 	const tree = vscode.window.createTreeView('ormaster', {
 		treeDataProvider: ormasterProvider
 	});
+
+	vscode.commands.registerCommand("ormaster.login", () => hackerrank.login(true))
 
 	vscode.commands.registerCommand("ormaster.submitChallenge", async (uri) => {
 		
@@ -141,7 +136,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		const slug = challengeSlug.replace(/_/g, '-')
 
-		hackerrank_aggregator.submit_challenge(slug, sql)
+		hackerrank.submitChallenge(slug, sql)
 	})
 
 	// register the code lens provider
@@ -155,7 +150,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	tree.onDidChangeSelection(async e => {
 		// get the html
 		const challenge_url = e.selection[0].url
-		const challengeHTML = await hackerrank_aggregator.get_challenge(challenge_url)
+		const challengeHTML = await hackerrank.getChallenge(challenge_url)
 		vscode.commands.registerCommand("ormaster.setupChallenge", async (challenge: IChallenge) => {
 			// create the application
 			// TODO: make sure the name follow the convention

@@ -15,11 +15,15 @@
     "commands": [
       {
         "command": "ormaster.setupChallenge",
-        "title": "Setup Challenge"
+        "title": "ORMaster: Setup Challenge"
       },
       {
         "command": "ormaster.submitChallenge",
-        "title": "Submit Challenge"
+        "title": "ORMaster: Submit Challenge"
+      },
+      {
+        "command": "ormaster.login",
+        "title": "ORMaster: Login to HackerRank with Cookie"
       }
     ],
     "views": {
@@ -40,6 +44,28 @@
           "icon": "media/ormaster-icon.svg"
         }
       ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "ORMaster",
+      "properties": {
+        "ormaster.workspaceDir": {
+          "type": "string",
+          "default": ""
+        },
+        "ormaster.cookie": {
+          "type": "string",
+          "default": ""
+        },
+        "ormaster.challengesUrl": {
+          "type": "string",
+          "default": "https://www.hackerrank.com/rest/contests/master/tracks/sql/challenges"
+        },
+        "ormaster.challengeUrl": {
+          "type": "string",
+          "default": "https://www.hackerrank.com/challenges/"
+        }
+      }
     }
   },
   "capabilities": {
