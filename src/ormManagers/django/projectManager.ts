@@ -14,15 +14,17 @@ def get_queryset() -> models.QuerySet:
 `
     }
 
-    async createApp(appName: string): Promise<string> {
+    async createApp(appName: string, hard: boolean = false): Promise<string> {
+        const modelsPath = path.join(this.environmentManager.getDjangoPath(), appName, 'models.py')
+        if (fs.existsSync(modelsPath) && !hard) {
+            return modelsPath
+        }
+
         const pythonBinPath = path.join(this.environmentManager.getDjangoPath(), 'venv', 'bin', 'python3')
         // remove the directory if it exists
         const appPath = path.join(this.environmentManager.getDjangoPath(), appName)
 
-        console.log(appPath)
-        if (fs.existsSync(appPath)) {
-            fs.removeSync(appPath)
-        }
+        fs.removeSync(appPath)
         fs.mkdirSync(appPath)
 
         await executeShellCommand(pythonBinPath, ['-m', 'django', 'startapp', appName, appPath])
@@ -42,7 +44,6 @@ def get_queryset() -> models.QuerySet:
         
 
         // append the function to models.py
-        const modelsPath = path.join(this.environmentManager.getDjangoPath(), appName, 'models.py')
         const modelsFile = fs.readFileSync(modelsPath, 'utf-8')
         const newModelsFile = modelsFile + this.getInjectionFunction()
         fs.writeFileSync(modelsPath, newModelsFile, 'utf-8')
