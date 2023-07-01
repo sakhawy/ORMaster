@@ -1,8 +1,13 @@
+// TODO: Refresh the cache when cookie expires
+
 import axios, { AxiosInstance } from 'axios';
 import cheerio from 'cheerio';
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs-extra';
 import IAggregator, { IChallenge } from './base';
 import configManager from '../config/configManager';
+import { EXTENSION_HOME_PATH } from '../constants';
 
 export default class HackerRank implements IAggregator {
     handle: string;
@@ -41,7 +46,47 @@ export default class HackerRank implements IAggregator {
         }
     }
 
-    listChallenges = async () => {
+    cacheChallenges = async (challenges: IChallenge[]) => {
+        // a directory with a json for the metadata
+        // and html files from each challenge
+        const cachePath = path.join(EXTENSION_HOME_PATH, 'cache')
+        fs.ensureDirSync(cachePath)
+        const challengesPath = path.join(cachePath, 'challenges.json')
+        fs.ensureFileSync(challengesPath)
+        fs.writeJSONSync(challengesPath, challenges)
+    }
+
+    cacheChallenge = async (challenge: IChallenge, challengeHTML: string | null) => {
+        const cachePath = path.join(EXTENSION_HOME_PATH, 'cache')
+        fs.ensureDirSync(cachePath)
+        const challengePath = path.join(cachePath, `${challenge.slug}.html`)
+        if (challengeHTML !== null) {
+            fs.ensureFileSync(challengePath)
+            fs.writeFileSync(challengePath, challengeHTML)
+        }
+    }
+
+    listChallenges = async (): Promise<IChallenge[]> => {
+        // check if there is a cache
+        const cachePath = path.join(EXTENSION_HOME_PATH, 'cache')
+        const challengesPath = path.join(cachePath, 'challenges.json')
+        if (fs.existsSync(challengesPath)) {
+            return fs.readJSONSync(challengesPath)
+        }
+        return await this._listChallenges()
+    }
+
+    getChallenge = async (challenge: IChallenge): Promise<string | null> => {
+        // check if there is a cache
+        const cachePath = path.join(EXTENSION_HOME_PATH, 'cache')
+        const challengePath = path.join(cachePath, `${challenge.slug}.html`)
+        if (fs.existsSync(challengePath)) {
+            return fs.readFileSync(challengePath, 'utf-8')
+        }
+        return await this._getChallenge(challenge)
+    }
+
+    _listChallenges = async () => {
         // get json data
         const res = await this.axiosClient.get(
             this.challengesUrl,
@@ -62,16 +107,20 @@ export default class HackerRank implements IAggregator {
                 url: `${this.challengeUrl}${challenge.slug}`
             }
         });
+
+        await this.cacheChallenges(challenges)
         
         return challenges
     }
 
-    getChallenge = async (challenge_url: string) => {
-        const res = await this.axiosClient.get(challenge_url);
+    _getChallenge = async (challenge: IChallenge) => {
+        const res = await this.axiosClient.get(challenge.url);
 
         // get the html of the problem statement
         const $ = cheerio.load(res.data);
         const html = $('.problem-statement').html();
+
+        await this.cacheChallenge(challenge, html)
 
         return html;
 

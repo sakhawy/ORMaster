@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import HackerRank from './aggregators/hackerrank';
 import { IChallenge } from './aggregators/base';
 import djangoProjectManager from './ormManagers/django/projectManager';
@@ -10,17 +8,12 @@ import { openWorkspaceDir } from './utils/workspace';
 class ORMasterItem extends vscode.TreeItem {
 	// TODO: pass the challenge object to the constructor
 	constructor(
-		public readonly title: string,
-		public readonly slug: string,
-		public readonly difficulty: string,
-		public readonly url: string,
+		public readonly challenge: IChallenge,
 		public readonly collapsibleState: vscode.TreeItemCollapsibleState
 	) {
-		super(title, collapsibleState);
+		super(challenge.title, collapsibleState);
 		this.tooltip = `${this.label}`;
-		this.description = `${this.label}`;
-		this.slug = `${this.slug}`;
-		this.url = `${this.url}`
+		this.challenge = challenge
 	}
 
 	iconPath = {
@@ -50,10 +43,7 @@ class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
 		const data = this.hackerrank.listChallenges().then(
 			(data: IChallenge[]) => data.map(
 				(challenge) => new ORMasterItem(
-					challenge.title,
-					challenge.slug,
-					challenge.difficulty,
-					challenge.url,
+					challenge,
 					vscode.TreeItemCollapsibleState.None
 				)
 			)
@@ -140,6 +130,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		hackerrank.submitChallenge(slug, sql)
 	})
+	
+	vscode.commands.registerCommand("ormaster.setupChallenge", async (challenge: IChallenge) => {
+		// create the application
+		// TODO: make sure the name follow the convention
+		const modelsPath = await djangoProjectManager.createApp(challenge.slug.replace(/-/g, '_'))
+
+		// open the models.py file in a new vscode window
+		vscode.workspace.openTextDocument(modelsPath).then(
+			(doc) => {
+				vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.Two })
+			}
+		)
+	})
 
 	// register the code lens provider
 	context.subscriptions.push(
@@ -150,22 +153,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	)
 
 	tree.onDidChangeSelection(async e => {
-		// get the html
-		const challenge_url = e.selection[0].url
-		const challengeHTML = await hackerrank.getChallenge(challenge_url)
-		vscode.commands.registerCommand("ormaster.setupChallenge", async (challenge: IChallenge) => {
-			// create the application
-			// TODO: make sure the name follow the convention
-			const modelsPath = await djangoProjectManager.createApp(challenge.slug.replace(/-/g, '_'))
-
-			// open the models.py file in a new vscode window
-			vscode.workspace.openTextDocument(modelsPath).then(
-				(doc) => {
-					vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.Two })
-				}
-			)
-		})
-
+		// get the challenge
+		const challenge = e.selection[0].challenge
+		const challengeHTML = await hackerrank.getChallenge(challenge)
 		const panel = vscode.window.createWebviewPanel(
 			'ormaster',
 			'ORMaster',

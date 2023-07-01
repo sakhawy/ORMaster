@@ -22,7 +22,7 @@ export default interface IAggregator {
     * @param challenge_url The url of the challenge.
     * @returns The data of the challenge.
     */
-    getChallenge: (challenge_url: string) => any;
+    getChallenge: (challenge: IChallenge) => any;
 
     /**
     * @description Submits a challenge to the aggregator.
