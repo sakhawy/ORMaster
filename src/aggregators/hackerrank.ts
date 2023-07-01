@@ -126,80 +126,54 @@ export default class HackerRank implements IAggregator {
 
     }
 
-    submitChallenge = (challenge_slug?: string, data?: any) => {
-        var csrf_token: string = ''
-        axios.get(
-            `https://www.hackerrank.com/challenges/${challenge_slug}/problem`,
+    submitChallenge = async (challengeSlug?: string, data?: any) => {
+        let csrfToken: string = ''
+        const problemHTML = await axios.get(
+            `https://www.hackerrank.com/challenges/${challengeSlug}/problem`,
             {
                 headers: {
                     Cookie: this.cookie,
                     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
                 }
             }
-        ).then(
-            (response) => {
-                // parse the CSRF token
-                const $ = cheerio.load(response.data)
-                csrf_token = $('meta[name="csrf-token"]').attr('content') || ""
-                
-                axios.post(
-                    `https://www.hackerrank.com/rest/contests/master/challenges/${challenge_slug}/submissions`,
-                    {"code": data,"language":"db2","contest_slug":"master","playlist_slug":""},
-                    {
-                        headers: {
-                            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
-                            "X-CSRF-Token": csrf_token,
-                            "Cookie": this.cookie
-                        }
-                    }
-                ).then(
-                    (response: any) => {
-                        const id = response.data.model.id
-                        const submission_url = `https://www.hackerrank.com/rest/contests/master/challenges/${challenge_slug}/submissions/${id}`
-
-                        axios.get(
-                            submission_url,
-                            {
-                                headers: {
-                                    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
-                                    // "X-CSRF-Token": csrf_token,
-                                    "Cookie": this.cookie
-                                }
-                            }
-                        ).then(
-                            (response: any) => {
-                                var status = response.data.model.status
-                                // send a request every 5 seconds to check the status
-                                const interval = setInterval(
-                                    () => {
-                                        axios.get(
-                                            submission_url,
-                                            {
-                                                headers: {
-                                                    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
-                                                    // "X-CSRF-Token": csrf_token,
-                                                    "Cookie": this.cookie
-                                                }
-                                            }
-                                        ).then(
-                                            (response: any) => {
-                                                status = response.data.model.status
-                                                // stop the interval if the status is not in queue
-                                                if (status != "Processing") {
-                                                    clearInterval(interval)
-                                                    console.log(response.data)
-                                                }
-                                            }
-                                        )
-                                    }, 5000
-                                )
-
-                            }
-                        )
-                    }
-                        
-                )
+        )
+        // parse the CSRF token
+        const $ = cheerio.load(problemHTML.data)
+        csrfToken = $('meta[name="csrf-token"]').attr('content') || ""
+        const submissionHTML = await axios.post(
+            `https://www.hackerrank.com/rest/contests/master/challenges/${challengeSlug}/submissions`,
+            {"code": data,"language":"db2","contest_slug":"master","playlist_slug":""},
+            {
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+                    "X-CSRF-Token": csrfToken,
+                    "Cookie": this.cookie
+                }
             }
         )
+        const challengeId = submissionHTML.data.model.id
+        const submissionUrl = `https://www.hackerrank.com/rest/contests/master/challenges/${challengeSlug}/submissions/${challengeId}`
+        
+        // poll the submission url until it is done
+        let status
+        let resultHTML
+        do {
+            const resultHTML = await axios.get(
+                submissionUrl,
+                {
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+                        "X-CSRF-Token": csrfToken,
+                        "Cookie": this.cookie
+                    }
+                }
+            )
+            status = resultHTML.data.model.status
+
+            await new Promise(_ => setTimeout(_, 5000));
+
+        } while (status === "Processing")
+        
+        return resultHTML
     }
 }
