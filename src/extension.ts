@@ -4,6 +4,7 @@ import HackerRank from './aggregators/hackerrank';
 import { IChallenge } from './aggregators/base';
 import djangoProjectManager from './ormManagers/django/projectManager';
 import { openWorkspaceDir } from './utils/workspace';
+import { withProgress } from './utils/notifications';
 
 class ORMasterItem extends vscode.TreeItem {
 	// TODO: pass the challenge object to the constructor
@@ -39,16 +40,18 @@ class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
 		return Promise.resolve(this.getORMasterChildren());
 	}
 
-	private getORMasterChildren(element?: string): Promise<ORMasterItem[]> {
-		const data = this.hackerrank.listChallenges().then(
-			(data: IChallenge[]) => data.map(
-				(challenge) => new ORMasterItem(
-					challenge,
-					vscode.TreeItemCollapsibleState.None
-				)
+	private async getORMasterChildren(element?: string): Promise<ORMasterItem[]> {
+		const challenges = await withProgress(
+			'Fetching challenges...',
+			() => this.hackerrank.listChallenges()
+		)
+		const result = challenges.map(
+			(challenge: IChallenge) => new ORMasterItem(
+				challenge,
+				vscode.TreeItemCollapsibleState.None
 			)
 		)
-		return data
+		return result
 	}
 }
 
@@ -155,7 +158,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	tree.onDidChangeSelection(async e => {
 		// get the challenge
 		const challenge = e.selection[0].challenge
-		const challengeHTML = await hackerrank.getChallenge(challenge)
+		const challengeHTML = await withProgress(
+			"Fecthing challenge...",
+			() => {
+				return hackerrank.getChallenge(challenge)
+			}
+		)
+
 		const panel = vscode.window.createWebviewPanel(
 			'ormaster',
 			'ORMaster',
