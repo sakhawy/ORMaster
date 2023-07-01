@@ -15,3 +15,7 @@ export async function withProgress(message: string, callback: Function): Promise
     });
     return result;
 }
+
+export async function showInformationMessage(message: string): Promise<void> {
+    await vscode.window.showInformationMessage(message);
+}

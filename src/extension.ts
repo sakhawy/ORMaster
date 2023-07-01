@@ -4,7 +4,7 @@ import HackerRank from './aggregators/hackerrank';
 import { IChallenge } from './aggregators/base';
 import djangoProjectManager from './ormManagers/django/projectManager';
 import { openWorkspaceDir } from './utils/workspace';
-import { withProgress } from './utils/notifications';
+import { showInformationMessage, withProgress } from './utils/notifications';
 import djangoEnvironmentManager from './ormManagers/django/environmentManager';
 
 class ORMasterItem extends vscode.TreeItem {
@@ -122,7 +122,9 @@ async function submitChallenge(uri: vscode.Uri, hackerrank: HackerRank){
 
 	const slug = challengeSlug.replace(/_/g, '-')
 
-	await hackerrank.submitChallenge(slug, sql)
+	const response = await hackerrank.submitChallenge(slug, sql)
+	
+	showInformationMessage(response.model.status)
 }
 
 export async function activate(context: vscode.ExtensionContext) {

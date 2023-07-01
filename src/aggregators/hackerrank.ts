@@ -158,7 +158,7 @@ export default class HackerRank implements IAggregator {
         let status
         let resultHTML
         do {
-            const resultHTML = await axios.get(
+            resultHTML = await axios.get(
                 submissionUrl,
                 {
                     headers: {
@@ -174,6 +174,6 @@ export default class HackerRank implements IAggregator {
 
         } while (status === "Processing")
         
-        return resultHTML
+        return resultHTML.data
     }
 }
