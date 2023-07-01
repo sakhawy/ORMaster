@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import executeShellCommand from '../../utils/shell';
 import { EXTENSION_HOME_PATH } from '../../constants';
+import { openWorkspaceDir, setWorkspaceDir } from '../../utils/workspace';
 
 export class DjangoEnvironmentManager {
     constructor () {}
@@ -50,6 +51,9 @@ export class DjangoEnvironmentManager {
             '        \'ENGINE\': \'django.db.backends.sqlite3\',',
             '        \'ENGINE\': \'django.db.backends.sqlite3\',\n        \'NAME\': \':memory:\','
         )
+
+        setWorkspaceDir()
+        openWorkspaceDir()
     }
 
     // async createApp(appName: string): Promise<void> {

@@ -5,7 +5,7 @@ import * as os from 'os';
 import HackerRank from './aggregators/hackerrank';
 import { IChallenge } from './aggregators/base';
 import djangoProjectManager from './ormManagers/django/projectManager';
-import configManager from './config/configManager';
+import { openWorkspaceDir } from './utils/workspace';
 
 class ORMasterItem extends vscode.TreeItem {
 	// TODO: pass the challenge object to the constructor
@@ -108,11 +108,13 @@ class CustomCodeLensProvider implements vscode.CodeLensProvider {
 }
 
 export async function activate(context: vscode.ExtensionContext) {
+	await openWorkspaceDir()
+	
 	const rootPath =
 	vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
-	
+
 	const hackerrank = new HackerRank()
 	await hackerrank.login()
 
