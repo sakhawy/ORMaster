@@ -124,7 +124,9 @@ async function submitChallenge(uri: vscode.Uri, hackerrank: HackerRank){
 
 	const response = await hackerrank.submitChallenge(slug, sql)
 	
-	showInformationMessage(response.model.status)
+	if (response) {
+		showInformationMessage(response.model.status)
+	}
 }
 
 export async function activate(context: vscode.ExtensionContext) {

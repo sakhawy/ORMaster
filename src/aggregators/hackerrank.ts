@@ -8,6 +8,7 @@ import * as fs from 'fs-extra';
 import IAggregator, { IChallenge } from './base';
 import configManager from '../config/configManager';
 import { EXTENSION_HOME_PATH } from '../constants';
+import { rejects } from 'assert';
 
 export default class HackerRank implements IAggregator {
     handle: string;
@@ -44,6 +45,9 @@ export default class HackerRank implements IAggregator {
             this.cookie = cookie
             this.axiosClient.defaults.headers.Cookie = cookie
         }
+
+        // reset the cached challenges 
+        fs.emptyDirSync(path.join(EXTENSION_HOME_PATH, 'cache'))
     }
 
     cacheChallenges = async (challenges: IChallenge[]) => {
@@ -140,26 +144,10 @@ export default class HackerRank implements IAggregator {
         // parse the CSRF token
         const $ = cheerio.load(problemHTML.data)
         csrfToken = $('meta[name="csrf-token"]').attr('content') || ""
-        const submissionHTML = await axios.post(
-            `https://www.hackerrank.com/rest/contests/master/challenges/${challengeSlug}/submissions`,
-            {"code": data,"language":"db2","contest_slug":"master","playlist_slug":""},
-            {
-                headers: {
-                    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
-                    "X-CSRF-Token": csrfToken,
-                    "Cookie": this.cookie
-                }
-            }
-        )
-        const challengeId = submissionHTML.data.model.id
-        const submissionUrl = `https://www.hackerrank.com/rest/contests/master/challenges/${challengeSlug}/submissions/${challengeId}`
-        
-        // poll the submission url until it is done
-        let status
-        let resultHTML
-        do {
-            resultHTML = await axios.get(
-                submissionUrl,
+        try {
+            let submissionHTML = await axios.post(
+                `https://www.hackerrank.com/rest/contests/master/challenges/${challengeSlug}/submissions`,
+                {"code": data,"language":"db2","contest_slug":"master","playlist_slug":""},
                 {
                     headers: {
                         "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
@@ -168,12 +156,39 @@ export default class HackerRank implements IAggregator {
                     }
                 }
             )
-            status = resultHTML.data.model.status
 
-            await new Promise(_ => setTimeout(_, 5000));
+            const challengeId = submissionHTML.data.model.id
+            const submissionUrl = `https://www.hackerrank.com/rest/contests/master/challenges/${challengeSlug}/submissions/${challengeId}`
+            
+            // poll the submission url until it is done
+            let status
+            let resultHTML
+            do {
+                resultHTML = await axios.get(
+                    submissionUrl,
+                    {
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+                            "X-CSRF-Token": csrfToken,
+                            "Cookie": this.cookie
+                        }
+                    }
+                )
+                status = resultHTML.data.model.status
 
-        } while (status === "Processing")
-        
-        return resultHTML.data
+                await new Promise(_ => setTimeout(_, 5000));
+
+            } while (status === "Processing")
+            
+            return resultHTML.data
+
+        } catch (e: any) {
+            if (e.response.status === 405) {
+                // invalid cookie, login again
+                await this.login(true)
+            }
+
+            return null
+        }
     }
 }
