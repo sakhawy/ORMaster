@@ -5,6 +5,7 @@ import { IChallenge } from './aggregators/base';
 import djangoProjectManager from './ormManagers/django/projectManager';
 import { openWorkspaceDir } from './utils/workspace';
 import { withProgress } from './utils/notifications';
+import djangoEnvironmentManager from './ormManagers/django/environmentManager';
 
 class ORMasterItem extends vscode.TreeItem {
 	// TODO: pass the challenge object to the constructor
@@ -100,7 +101,39 @@ class CustomCodeLensProvider implements vscode.CodeLensProvider {
 		}
 }
 
+async function setupChallenge (challenge: IChallenge) {
+	// create the application
+	// TODO: make sure the name follow the convention
+	const modelsPath = await djangoProjectManager.createApp(challenge.slug.replace(/-/g, '_'))
+
+	// open the models.py file in a new vscode window
+	vscode.workspace.openTextDocument(modelsPath).then(
+		(doc) => {
+			vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.Two })
+		}
+	)
+}
+
+async function submitChallenge(uri: vscode.Uri, hackerrank: HackerRank){
+	// [...]/${challengeSlug}/models.py
+	const challengeSlug: string = uri.path.split("/").slice(-2)[0]
+	var sql = await djangoProjectManager.runQueryset(challengeSlug)
+	sql += ';'
+
+	const slug = challengeSlug.replace(/_/g, '-')
+
+	await hackerrank.submitChallenge(slug, sql)
+}
+
 export async function activate(context: vscode.ExtensionContext) {
+	// setup the environment
+	if (!djangoEnvironmentManager.validateSetup()) {
+		await withProgress(
+			'Setting up the Django environment...',
+			() => djangoEnvironmentManager.setUpEnvironment()
+		)
+	}
+
 	await openWorkspaceDir()
 	
 	const rootPath =
@@ -123,27 +156,16 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand("ormaster.login", () => hackerrank.login(true))
 
 	vscode.commands.registerCommand("ormaster.submitChallenge", async (uri) => {
-		
-		// [...]/${challengeSlug}/models.py
-		const challengeSlug: string = uri.path.split("/").slice(-2)[0]
-		var sql = await djangoProjectManager.runQueryset(challengeSlug)
-		sql += ';'
-
-		const slug = challengeSlug.replace(/_/g, '-')
-
-		hackerrank.submitChallenge(slug, sql)
+		await withProgress(
+			'Submitting challenge...',
+			() => submitChallenge(uri, hackerrank)
+		)
 	})
 	
 	vscode.commands.registerCommand("ormaster.setupChallenge", async (challenge: IChallenge) => {
-		// create the application
-		// TODO: make sure the name follow the convention
-		const modelsPath = await djangoProjectManager.createApp(challenge.slug.replace(/-/g, '_'))
-
-		// open the models.py file in a new vscode window
-		vscode.workspace.openTextDocument(modelsPath).then(
-			(doc) => {
-				vscode.window.showTextDocument(doc, { preview: false, viewColumn: vscode.ViewColumn.Two })
-			}
+		await withProgress(
+			'Setting up the challenge...',
+			() => setupChallenge(challenge)
 		)
 	})
 
@@ -179,7 +201,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			(message) => {
 				switch(message.command) {
 					case 'setupChallenge':
-						return vscode.commands.executeCommand("ormaster.setupChallenge", e.selection[0]);
+						return vscode.commands.executeCommand("ormaster.setupChallenge", e.selection[0].challenge);
 				}
 			}
 		)

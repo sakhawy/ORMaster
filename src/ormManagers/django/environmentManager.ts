@@ -12,15 +12,22 @@ export class DjangoEnvironmentManager {
     }
 
     async validateEnvironment(): Promise<any>{
+        try {
+            const pythonVersion: string = await executeShellCommand('python3', ['--version'])
+            const pipVersion: string = await executeShellCommand('pip3', ['--version'])
+            const venvVersion: string = await executeShellCommand('python3', ['-m', 'venv', '--version'])        
+            return true
+        } catch (error) {
+            return false
+        }
+    }
+
+    async validateSetup(): Promise<boolean> {
+        // check if the django project exists
+        if (!await this.projectExists()) {
+            return false
+        }
         return true
-        // try {
-        //     const pythonVersion: string = await executeShellCommand('python3', ['--version'])
-        //     const pipVersion: string = await executeShellCommand('pip3', ['--version'])
-        //     const venvVersion: string = await executeShellCommand('python3', ['-m', 'venv', '--version'])        
-        //     return true
-        // } catch (error) {
-        //     return false
-        // }
     }
 
     async projectExists(): Promise<boolean> {
