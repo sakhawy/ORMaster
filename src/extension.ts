@@ -6,6 +6,7 @@ import djangoProjectManager from './ormManagers/django/projectManager';
 import { openWorkspaceDir } from './utils/workspace';
 import { showInformationMessage, withProgress } from './utils/notifications';
 import djangoEnvironmentManager from './ormManagers/django/environmentManager';
+import { isSet } from 'util/types';
 
 class ORMasterItem extends vscode.TreeItem {
 	// TODO: pass the challenge object to the constructor
@@ -131,7 +132,8 @@ async function submitChallenge(uri: vscode.Uri, hackerrank: HackerRank){
 
 export async function activate(context: vscode.ExtensionContext) {
 	// setup the environment
-	if (!djangoEnvironmentManager.validateSetup()) {
+	const isSetupValid = await djangoEnvironmentManager.validateSetup() 
+	if (!isSetupValid) {
 		await withProgress(
 			'Setting up the Django environment...',
 			() => djangoEnvironmentManager.setUpEnvironment()
