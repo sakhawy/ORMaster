@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
+import * as vscode from 'vscode';
 import executeShellCommand from '../../utils/shell';
 import { EXTENSION_HOME_PATH } from '../../constants';
 import { openWorkspaceDir, setWorkspaceDir } from '../../utils/workspace';
@@ -11,15 +12,28 @@ export class DjangoEnvironmentManager {
         return path.join(EXTENSION_HOME_PATH, 'django')
     }
 
-    async validateEnvironment(): Promise<any>{
+    async validateEnvironment(): Promise<boolean>{
         try {
             const pythonVersion: string = await executeShellCommand('python3', ['--version'])
-            const pipVersion: string = await executeShellCommand('pip3', ['--version'])
-            const venvVersion: string = await executeShellCommand('python3', ['-m', 'venv', '--version'])        
-            return true
         } catch (error) {
+            vscode.window.showErrorMessage('Python3 is not installed. Make sure `python3` is in your PATH.')
             return false
         }
+        try {
+            const pipVersion: string = await executeShellCommand('pip3', ['--version'])
+        } catch (error) {
+            vscode.window.showErrorMessage('pip3 is not installed. Make sure `pip3` is in your PATH.')
+            return false
+        }
+        try {
+            const venvVersion: string = await executeShellCommand('python3', ['-m', 'venv', '--version'])        
+        }
+        catch (error) {
+            vscode.window.showErrorMessage('venv is not installed.')
+            return false
+        }
+
+        return true
     }
 
     async validateSetup(): Promise<boolean> {

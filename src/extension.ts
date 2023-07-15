@@ -136,7 +136,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	if (!isSetupValid) {
 		await withProgress(
 			'Setting up the Django environment...',
-			() => djangoEnvironmentManager.setUpEnvironment()
+			async () => {
+				const isEnvValid = await djangoEnvironmentManager.validateEnvironment()
+				if (isEnvValid) {
+					await djangoEnvironmentManager.setUpEnvironment()
+				}
+			}
 		)
 	}
 
