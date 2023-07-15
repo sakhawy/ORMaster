@@ -20,7 +20,7 @@ def get_queryset() -> models.QuerySet:
             return modelsPath
         }
 
-        const pythonBinPath = path.join(this.environmentManager.getDjangoPath(), 'venv', 'bin', 'python3')
+        const pythonBinPath = this.environmentManager.getPythonPath()
         // remove the directory if it exists
         const appPath = path.join(this.environmentManager.getDjangoPath(), appName)
 
@@ -53,7 +53,7 @@ def get_queryset() -> models.QuerySet:
 
     async runQueryset(appName: string): Promise<string> {
         // makemigrations
-        const pythonBinPath = path.join(this.environmentManager.getDjangoPath(), 'venv', 'bin', 'python3')
+        const pythonBinPath = this.environmentManager.getPythonPath()
         const managePath = path.join(this.environmentManager.getDjangoPath(), 'manage.py')
         await executeShellCommand(pythonBinPath, [managePath, 'makemigrations'])
 

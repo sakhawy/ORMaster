@@ -68,6 +68,22 @@
         "ormaster.challengeUrl": {
           "type": "string",
           "default": "https://www.hackerrank.com/challenges/"
+        },
+        "ormaster.pythonVenvPathLinux": {
+          "type": "string",
+          "default": "/venv/bin/python"
+        },
+        "ormaster.pipVenvPathLinux": {
+          "type": "string",
+          "default": "/venv/bin/pip"
+        },
+        "ormaster.pythonVenvPathWindows": {
+          "type": "string",
+          "default": "\\venv\\Scripts\\python.exe"
+        },
+        "ormaster.pipVenvPathWindows": {
+          "type": "string",
+          "default": "\\venv\\Scripts\\pip.exe"
         }
       }
     }
