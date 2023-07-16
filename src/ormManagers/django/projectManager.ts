@@ -67,7 +67,7 @@ def get_queryset() -> models.QuerySet:
         const ormasterPath = path.join(this.environmentManager.getDjangoPath())
         const injectionScript = `
 import sys, os, django
-BASE_DIR = "${ormasterPath}"
+BASE_DIR = r"${ormasterPath}"
 sys.path.insert(0, BASE_DIR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ormaster.settings")
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
@@ -81,7 +81,7 @@ print(str(get_queryset().query).replace('${appName}_', ''))
         const modelsPathContent = fs.readFileSync(modelsPath, 'utf-8')
         fs.writeFileSync(injectionPath, injectionScript , 'utf-8')
 
-        const sql = await executeShellCommand(pythonBinPath, [managePath, 'shell', '-c', `exec(open('${injectionPath}').read())`])
+        const sql = await executeShellCommand(pythonBinPath, [managePath, 'shell', '-c', `exec(open(r'${injectionPath}').read())`])
     
         return sql
     }
