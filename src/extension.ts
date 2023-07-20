@@ -6,7 +6,7 @@ import djangoProjectManager from './ormManagers/django/projectManager';
 import { openWorkspaceDir } from './utils/workspace';
 import { showInformationMessage, withProgress } from './utils/notifications';
 import djangoEnvironmentManager from './ormManagers/django/environmentManager';
-import { isSet } from 'util/types';
+import { problemPreviewWebView } from './webview/problemPreviewWebview';
 
 class ORMasterItem extends vscode.TreeItem {
 	// TODO: pass the challenge object to the constructor
@@ -56,30 +56,6 @@ class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
 		return result
 	}
 }
-
-function getWebviewContent(data: string) {
-	const button: { element: string, script: string } = {
-		element: `<button id="solve">Solve</button>`,
-		script: `const button = document.getElementById('solve');
-				button.onclick = () => vscode.postMessage({
-					command: 'setupChallenge',
-				});`,
-	};
-	
-	return `
-		<html>
-			<body>
-				${data}
-				${button.element}
-			</body>
-			<script>
-				const vscode = acquireVsCodeApi();
-				${button.script}
-			</script>
-		</html>
-	`;
-}
-
 
 class CustomCodeLensProvider implements vscode.CodeLensProvider {
     public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken):
@@ -198,24 +174,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			}
 		)
 
-		const panel = vscode.window.createWebviewPanel(
-			'ormaster',
-			'ORMaster',
-			vscode.ViewColumn.One,
-			{
-				enableScripts: true
-			}
-		)
-		
-		panel.webview.html = getWebviewContent(challengeHTML!)!
-		panel.webview.onDidReceiveMessage(
-			(message) => {
-				switch(message.command) {
-					case 'setupChallenge':
-						return vscode.commands.executeCommand("ormaster.setupChallenge", e.selection[0].challenge);
-				}
-			}
-		)
+		problemPreviewWebView.show(challenge, challengeHTML!)
 
 	})
 
