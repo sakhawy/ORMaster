@@ -7,55 +7,7 @@ import { openWorkspaceDir } from './utils/workspace';
 import { showInformationMessage, withProgress } from './utils/notifications';
 import djangoEnvironmentManager from './ormManagers/django/environmentManager';
 import { problemPreviewWebView } from './webview/problemPreviewWebview';
-
-class ORMasterItem extends vscode.TreeItem {
-	// TODO: pass the challenge object to the constructor
-	constructor(
-		public readonly challenge: IChallenge,
-		public readonly collapsibleState: vscode.TreeItemCollapsibleState
-	) {
-		super(challenge.title, collapsibleState);
-		this.tooltip = `${this.label}`;
-		this.challenge = challenge
-	}
-
-	iconPath = {
-		light: path.join(__filename, '..', '..', 'resources', 'light', 'aggregator.svg'),
-		dark: path.join(__filename, '..', '..', 'resources', 'dark', 'aggregator.svg')
-	};
-
-	contextValue = 'aggregator';
-}
-
-class ORMasterProvider implements vscode.TreeDataProvider<ORMasterItem> {
-	hackerrank: HackerRank
-
-	constructor (private worspaceRoot: string, hackerrank_aggregator: HackerRank) {
-		this.hackerrank = hackerrank_aggregator
-	}
-
-	getTreeItem(element: ORMasterItem): vscode.TreeItem {
-		return element;
-	}
-
-	getChildren(element?: ORMasterItem): Thenable<ORMasterItem[]> {
-		return Promise.resolve(this.getORMasterChildren());
-	}
-
-	private async getORMasterChildren(element?: string): Promise<ORMasterItem[]> {
-		const challenges = await withProgress(
-			'Fetching challenges...',
-			() => this.hackerrank.listChallenges()
-		)
-		const result = challenges.map(
-			(challenge: IChallenge) => new ORMasterItem(
-				challenge,
-				vscode.TreeItemCollapsibleState.None
-			)
-		)
-		return result
-	}
-}
+import { mainTreeDataProvider } from './treeDataProvider/mainTreeDataProvider';
 
 class CustomCodeLensProvider implements vscode.CodeLensProvider {
     public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken):
@@ -123,22 +75,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	await openWorkspaceDir()
 	
-	const rootPath =
-	vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
-		? vscode.workspace.workspaceFolders[0].uri.fsPath
-		: undefined;
-
 	const hackerrank = new HackerRank()
 	await hackerrank.login()
 
-	const ormasterProvider = new ORMasterProvider(
-		rootPath!, 
-		hackerrank
-	)
+	mainTreeDataProvider.initialize(hackerrank)
 
-	const tree = vscode.window.createTreeView('ormaster', {
-		treeDataProvider: ormasterProvider
-	});
+	vscode.window.createTreeView('ormaster', { treeDataProvider: mainTreeDataProvider })
 
 	vscode.commands.registerCommand("ormaster.login", () => hackerrank.login(true))
 
@@ -156,6 +98,16 @@ export async function activate(context: vscode.ExtensionContext) {
 		)
 	})
 
+	vscode.commands.registerCommand("ormaster.previewChallenge", async (challenge: IChallenge) => {
+		await withProgress(
+			"Fecthing challenge...",
+			async () => {
+				const challengeHTML = await hackerrank.getChallenge(challenge)
+				problemPreviewWebView.show(challenge, challengeHTML!)
+			}
+		)
+	})
+
 	// register the code lens provider
 	context.subscriptions.push(
 		vscode.languages.registerCodeLensProvider(
@@ -163,21 +115,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			new CustomCodeLensProvider()
 		)
 	)
-
-	tree.onDidChangeSelection(async e => {
-		// get the challenge
-		const challenge = e.selection[0].challenge
-		const challengeHTML = await withProgress(
-			"Fecthing challenge...",
-			() => {
-				return hackerrank.getChallenge(challenge)
-			}
-		)
-
-		problemPreviewWebView.show(challenge, challengeHTML!)
-
-	})
-
 }
 
 export function deactivate() {}

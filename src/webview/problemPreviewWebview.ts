@@ -25,6 +25,7 @@ export class ProblemPreviewWebView {
             )
             this.webViewPanel.onDidDispose(() => this.dispose())
         }
+        this.webViewPanel.webview.onDidReceiveMessage(this.onDidReceiveMessage, this, [])
         this.webViewPanel.webview.html = this.getWebviewContent(html)
     }
 
@@ -56,7 +57,6 @@ export class ProblemPreviewWebView {
     protected async onDidReceiveMessage(message: any): Promise<void> {
         switch (message.command) {
             case 'setupChallenge':
-                console.log("HERE!!!")
                 vscode.commands.executeCommand('ormaster.setupChallenge', this.challenge)
                 break
         }

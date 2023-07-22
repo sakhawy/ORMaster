@@ -18,14 +18,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "ormaster.setupChallenge",
-        "title": "ORMaster: Setup Challenge"
-      },
-      {
-        "command": "ormaster.submitChallenge",
-        "title": "ORMaster: Submit Challenge"
-      },
-      {
         "command": "ormaster.login",
         "title": "ORMaster: Login to HackerRank with Cookie"
       }
