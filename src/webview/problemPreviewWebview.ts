@@ -23,10 +23,9 @@ export class ProblemPreviewWebView {
                     enableScripts: true,
                 }
             )
-
-            this.webViewPanel.webview.html = this.getWebviewContent(html)
             this.webViewPanel.onDidDispose(() => this.dispose())
         }
+        this.webViewPanel.webview.html = this.getWebviewContent(html)
     }
 
     protected getWebviewContent(data: string): string {
@@ -57,6 +56,7 @@ export class ProblemPreviewWebView {
     protected async onDidReceiveMessage(message: any): Promise<void> {
         switch (message.command) {
             case 'setupChallenge':
+                console.log("HERE!!!")
                 vscode.commands.executeCommand('ormaster.setupChallenge', this.challenge)
                 break
         }
