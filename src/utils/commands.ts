@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { IChallenge } from "../aggregators/base"
 import djangoProjectManager from "../ormManagers/django/projectManager"
-import { showInformationMessage } from '../utils/notifications'
+import { showInformationMessage } from './notifications'
 import { HackerRank, hackerrank } from '../aggregators/hackerrank'
 import { problemPreviewWebView } from '../webview/problemPreviewWebview'
 

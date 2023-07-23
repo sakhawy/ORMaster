@@ -5,7 +5,8 @@ import { openWorkspaceDir } from './utils/workspace';
 import { withProgress } from './utils/notifications';
 import djangoEnvironmentManager from './ormManagers/django/environmentManager';
 import { mainTreeDataProvider } from './treeDataProvider/mainTreeDataProvider';
-import { login, previewChallenge, setupChallenge, submitChallenge } from './commands/commands';
+import { login, previewChallenge, setupChallenge, submitChallenge } from './utils/commands';
+import { debugOutputChannel } from './utils/debugOutputChannel';
 
 class CustomCodeLensProvider implements vscode.CodeLensProvider {
     public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken):
@@ -48,6 +49,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	await hackerrank.login()
 
 	mainTreeDataProvider.initialize()
+
+	// create the debug output channel
+	debugOutputChannel.initialize()
 
 	vscode.window.createTreeView('ormaster', { treeDataProvider: mainTreeDataProvider })
 

@@ -1,5 +1,6 @@
 import * as cp from 'child_process';
 import { spawn, SpawnOptions } from 'child_process';
+import { debugOutputChannel } from './debugOutputChannel';
 
 export default function executeShellCommand(command: string, args: string[], options?: SpawnOptions): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -19,12 +20,16 @@ export default function executeShellCommand(command: string, args: string[], opt
 
     childProcess.on('error', (error) => {
       // Reject the promise if an error occurs
+      debugOutputChannel.show()
+      debugOutputChannel.write(error.message)
       reject(error);
     });
 
     childProcess.on('close', (code) => {
       if (code !== 0) {
         // Reject the promise if the command exits with a non-zero code
+        debugOutputChannel.show()
+        debugOutputChannel.write(output)
         reject(new Error(`Command '${command}' failed with code ${code}`));
       } else {
         // Resolve the promise with the output
