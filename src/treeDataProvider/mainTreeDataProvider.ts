@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import HackerRank from '../aggregators/hackerrank';
+import { HackerRank, hackerrank } from '../aggregators/hackerrank';
 import { IChallenge } from '../aggregators/base';
 import { withProgress } from '../utils/notifications';
 
@@ -10,7 +10,7 @@ class MainTreeDataProvider implements vscode.TreeDataProvider<IChallenge> {
     private challenges: IChallenge[] = [];
     private hackerrank: HackerRank;
 
-    initialize (hackerrank: HackerRank) {
+    initialize () {
         this.hackerrank = hackerrank;
         this.refresh();
     }

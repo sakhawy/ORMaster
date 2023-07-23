@@ -10,7 +10,7 @@ import configManager from '../config/configManager';
 import { EXTENSION_HOME_PATH } from '../constants';
 import { rejects } from 'assert';
 
-export default class HackerRank implements IAggregator {
+export class HackerRank implements IAggregator {
     handle: string;
     challengesUrl: string;
     cookie: string;
@@ -192,3 +192,5 @@ export default class HackerRank implements IAggregator {
         }
     }
 }
+
+export const hackerrank = new HackerRank()
