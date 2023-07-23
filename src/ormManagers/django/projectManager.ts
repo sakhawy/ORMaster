@@ -52,6 +52,17 @@ def get_queryset() -> models.QuerySet:
     }
 
     async runQueryset(appName: string): Promise<string> {
+        // delete old migrations
+        const migrationsPath = path.join(this.environmentManager.getDjangoPath(), appName, 'migrations')
+        fs.emptyDir(migrationsPath)
+
+        // recreate the __init__.py file
+        fs.writeFileSync(path.join(migrationsPath, '__init__.py'), '', 'utf-8')
+
+        // remove the database
+        const dbPath = path.join(this.environmentManager.getDjangoPath(), 'db.sqlite3')
+        fs.removeSync(dbPath)
+
         // makemigrations
         const pythonBinPath = this.environmentManager.getPythonPath()
         const managePath = path.join(this.environmentManager.getDjangoPath(), 'manage.py')
