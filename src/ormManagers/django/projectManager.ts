@@ -2,6 +2,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import djangoEnvironmentManager, { DjangoEnvironmentManager } from './environmentManager'
 import executeShellCommand from '../../utils/shell'
+import { debugOutputChannel } from '../../utils/debugOutputChannel'
 
 export class DjangoProjectManager {
     environmentManager: DjangoEnvironmentManager = djangoEnvironmentManager
@@ -92,8 +93,8 @@ print(str(get_queryset().query).replace('${appName}_', ''))
         const modelsPathContent = fs.readFileSync(modelsPath, 'utf-8')
         fs.writeFileSync(injectionPath, injectionScript , 'utf-8')
 
-        const sql = await executeShellCommand(pythonBinPath, [managePath, 'shell', '-c', `exec(open(r'${injectionPath}').read())`])
-    
+        const sql = await executeShellCommand(pythonBinPath, [managePath, 'shell', '-c', `exec(open(r'${injectionPath}').read())`]) + ';'
+        debugOutputChannel.write("Raw SQL query: \n" + sql)
         return sql
     }
 }

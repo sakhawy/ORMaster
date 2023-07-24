@@ -36,7 +36,6 @@ export async function submitChallenge(uri: vscode.Uri){
 	// [...]/${challengeSlug}/models.py
 	const challengeSlug: string = uri.path.split("/").slice(-2)[0]
 	var sql = await djangoProjectManager.runQueryset(challengeSlug)
-	sql += ';'
 
 	const slug = challengeSlug.replace(/_/g, '-')
 
