@@ -1,12 +1,13 @@
 
 export interface IChallenge {
+    id: string
     slug: string;
     title: string;
     difficulty: string;
     url: string;
 }
 
-export default interface IAggregator {
+export interface IAggregator {
     handle: string;
     challengesUrl: string;
     cookie: string;
@@ -30,5 +31,20 @@ export default interface IAggregator {
     * @param data The data of the challenge.
     * @returns The result of the submission.
     */
-    submitChallenge: (challenge_url: string, data: any) => any;
+    submitChallenge: (challenge: IChallenge, data: any) => any;
+}
+
+export enum HackerRankResponseEnum {
+    ACCEPTED = "Accepted",
+    WRONG_ANSWER = "Wrong Answer",
+}
+
+export interface IHackerRankTestCase {
+    stdin: string
+    expectedOutput: string
+}
+
+export interface IHackerRankResponse {
+    status: HackerRankResponseEnum 
+    testcases?: IHackerRankTestCase[]
 }

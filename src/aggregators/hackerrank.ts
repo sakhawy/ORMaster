@@ -5,10 +5,9 @@ import cheerio from 'cheerio';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import IAggregator, { IChallenge } from './base';
+import { IChallenge, IAggregator, IHackerRankResponse, IHackerRankTestCase, HackerRankResponseEnum } from './base';
 import configManager from '../config/configManager';
 import { EXTENSION_HOME_PATH } from '../constants';
-import { rejects } from 'assert';
 
 export class HackerRank implements IAggregator {
     handle: string;
@@ -16,6 +15,7 @@ export class HackerRank implements IAggregator {
     cookie: string;
     axiosClient: AxiosInstance;
     challengeUrl: string;
+    challenges: IChallenge[] = [];
 
     constructor() {
         this.handle = "HackerRank";
@@ -75,9 +75,10 @@ export class HackerRank implements IAggregator {
         const cachePath = path.join(EXTENSION_HOME_PATH, 'cache')
         const challengesPath = path.join(cachePath, 'challenges.json')
         if (fs.existsSync(challengesPath)) {
-            return fs.readJSONSync(challengesPath)
+            this.challenges = fs.readJSONSync(challengesPath)
         }
-        return await this._listChallenges()
+        this.challenges = await this._listChallenges()
+        return this.challenges
     }
 
     getChallenge = async (challenge: IChallenge): Promise<string | null> => {
@@ -103,8 +104,9 @@ export class HackerRank implements IAggregator {
         )
 
         // reformat
-        const challenges: IChallenge[] = res.data['models'].map((challenge: any) => {
+        const challenges: IChallenge[] = res.data.models.map((challenge: any) => {
             return {
+                id: challenge.id,
                 slug: challenge.slug,
                 title: challenge.name,
                 difficulty: challenge.difficulty_name,
@@ -130,10 +132,11 @@ export class HackerRank implements IAggregator {
 
     }
 
-    submitChallenge = async (challengeSlug?: string, data?: any) => {
+    // TODO: Refactor this shit
+    submitChallenge = async (challenge: IChallenge, data?: any): Promise<IHackerRankResponse | null> => {
         let csrfToken: string = ''
         const problemHTML = await axios.get(
-            `https://www.hackerrank.com/challenges/${challengeSlug}/problem`,
+            `https://www.hackerrank.com/challenges/${challenge.slug}/problem`,
             {
                 headers: {
                     Cookie: this.cookie,
@@ -146,7 +149,7 @@ export class HackerRank implements IAggregator {
         csrfToken = $('meta[name="csrf-token"]').attr('content') || ""
         try {
             let submissionHTML = await axios.post(
-                `https://www.hackerrank.com/rest/contests/master/challenges/${challengeSlug}/submissions`,
+                `https://www.hackerrank.com/rest/contests/master/challenges/${challenge.slug}/submissions`,
                 {"code": data,"language":"db2","contest_slug":"master","playlist_slug":""},
                 {
                     headers: {
@@ -158,13 +161,16 @@ export class HackerRank implements IAggregator {
             )
 
             const challengeId = submissionHTML.data.model.id
-            const submissionUrl = `https://www.hackerrank.com/rest/contests/master/challenges/${challengeSlug}/submissions/${challengeId}`
+            const submissionUrl = `https://www.hackerrank.com/rest/contests/master/challenges/${challenge.slug}/submissions/${challengeId}`
             
             // poll the submission url until it is done
-            let status
-            let resultHTML
+            let response: IHackerRankResponse = {
+                status: HackerRankResponseEnum.ACCEPTED,
+            };
+
+            let HTMLResponse: any;
             do {
-                resultHTML = await axios.get(
+                HTMLResponse = await axios.get(
                     submissionUrl,
                     {
                         headers: {
@@ -174,15 +180,43 @@ export class HackerRank implements IAggregator {
                         }
                     }
                 )
-                status = resultHTML.data.model.status
 
                 await new Promise(_ => setTimeout(_, 5000));
+            } while (HTMLResponse.data.model.status === "Processing")
 
-            } while (status === "Processing")
-            
-            return resultHTML.data
+            response.status = HTMLResponse.data.model.status
+
+            if (response.status === HackerRankResponseEnum.ACCEPTED) {
+                return response
+            } else {
+                // Scrape the test case expected output
+                const testcaseId = HTMLResponse.data.model.testcase_message.findIndex((testcase: string) => testcase === "Wrong Answer");
+                
+                const url = `https://www.hackerrank.com/rest/contests/master/testcases/${challenge.id}/${testcaseId}/testcase_data`
+
+                const testcaseHTML = await axios.get(
+                    url,
+                    {
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/113.0",
+                            "X-CSRF-Token": csrfToken,
+                            "Cookie": this.cookie
+                        }
+                    }
+                )
+
+                response.testcases = [
+                    {
+                        stdin: testcaseHTML.data.stdin,
+                        expectedOutput: testcaseHTML.data.expected_output
+                    },  ...(response.testcases || [])
+                ]
+                return response
+            }
+
 
         } catch (e: any) {
+            // TODO: Should reject and handle this error elsewhere
             if (e.response.status === 405) {
                 // invalid cookie, login again
                 await this.login(true)

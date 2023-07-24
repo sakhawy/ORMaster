@@ -20,7 +20,6 @@ export default function executeShellCommand(command: string, args: string[], opt
 
     childProcess.on('error', (error) => {
       // Reject the promise if an error occurs
-      debugOutputChannel.show()
       debugOutputChannel.write(error.message)
       reject(error);
     });
@@ -28,7 +27,6 @@ export default function executeShellCommand(command: string, args: string[], opt
     childProcess.on('close', (code) => {
       if (code !== 0) {
         // Reject the promise if the command exits with a non-zero code
-        debugOutputChannel.show()
         debugOutputChannel.write(output)
         reject(new Error(`Command '${command}' failed with code ${code}`));
       } else {

@@ -15,6 +15,8 @@ export class DebugOutputChannel {
 
     // method to write debug messages to the terminal
     public write(message: string): void {
+        // Show before displaying messages 
+        this.show();
         this.outputChannel.appendLine(message);
     }
 }

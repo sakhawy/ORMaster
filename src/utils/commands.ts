@@ -2,8 +2,10 @@ import * as vscode from 'vscode'
 import { IChallenge } from "../aggregators/base"
 import djangoProjectManager from "../ormManagers/django/projectManager"
 import { showInformationMessage } from './notifications'
-import { HackerRank, hackerrank } from '../aggregators/hackerrank'
+import { hackerrank } from '../aggregators/hackerrank'
+import { IHackerRankResponse } from '../aggregators/base'
 import { problemPreviewWebView } from '../webview/problemPreviewWebview'
+import { debugOutputChannel } from './debugOutputChannel'
 
 export async function login() {
     hackerrank.login(true)
@@ -35,9 +37,16 @@ export async function submitChallenge(uri: vscode.Uri){
 
 	const slug = challengeSlug.replace(/_/g, '-')
 
-	const response = await hackerrank.submitChallenge(slug, sql)
-	
-	if (response) {
-		showInformationMessage(response.model.status)
+	const challenge: IChallenge | undefined = hackerrank.challenges.find((challenge) => challenge.slug === slug)
+
+	if (challenge) {
+		const response: IHackerRankResponse | null = await hackerrank.submitChallenge(challenge, sql)
+		if (response) {
+			showInformationMessage(response.status)
+			debugOutputChannel.write(response.status)
+			response.testcases?.forEach((testcase) => {
+				debugOutputChannel.write("Expected Output: \n" + testcase.expectedOutput) 
+			})
+		}
 	}
 }
