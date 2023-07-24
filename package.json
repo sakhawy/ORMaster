@@ -3,7 +3,7 @@
   "name": "ormaster",
   "displayName": "ORMaster",
   "description": "An extension that helps you mastering the ORM of your favorite web framework.",
-  "version": "0.2.0-beta",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/sakhawy/ORMaster/"
