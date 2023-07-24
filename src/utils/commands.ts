@@ -30,6 +30,9 @@ export async function setupChallenge (challenge: IChallenge) {
 }
 
 export async function submitChallenge(uri: vscode.Uri){
+	// save the file
+	await vscode.window.activeTextEditor?.document.save()
+
 	// [...]/${challengeSlug}/models.py
 	const challengeSlug: string = uri.path.split("/").slice(-2)[0]
 	var sql = await djangoProjectManager.runQueryset(challengeSlug)

@@ -7,27 +7,7 @@ import djangoEnvironmentManager from './ormManagers/django/environmentManager';
 import { mainTreeDataProvider } from './treeDataProvider/mainTreeDataProvider';
 import { login, previewChallenge, setupChallenge, submitChallenge } from './utils/commands';
 import { debugOutputChannel } from './utils/debugOutputChannel';
-
-class CustomCodeLensProvider implements vscode.CodeLensProvider {
-    public provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken):
-        vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
-			let codeLensLine: number = document.lineCount - 1;
-			// add a code lens on the last line of the document
-			return [
-				new vscode.CodeLens(
-					new vscode.Range(
-						new vscode.Position(codeLensLine, 0),
-						new vscode.Position(codeLensLine, 0)
-					),
-					{
-						title: "Submit Challenge",
-						command: "ormaster.submitChallenge",
-						arguments: [document.uri]
-					}
-				)
-			];
-		}
-}
+import { submissionCodeLensController } from './codeLens/submissionCodeLens';
 
 export async function activate(context: vscode.ExtensionContext) {
 	// setup the environment
@@ -80,10 +60,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// register the code lens provider
 	context.subscriptions.push(
-		vscode.languages.registerCodeLensProvider(
-			{ scheme: "file" },
-			new CustomCodeLensProvider()
-		)
+		submissionCodeLensController
 	)
 }
 
