@@ -1,6 +1,7 @@
 {
+  "publisher": "Sakhawy",
   "name": "ormaster",
-  "displayName": "ormaster",
+  "displayName": "ORMaster",
   "description": "An extension that helps you mastering the ORM of your favorite web framework.",
   "version": "0.2.0-beta",
   "repository": {
